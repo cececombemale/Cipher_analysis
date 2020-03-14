@@ -1,5 +1,11 @@
 import random
 
+import frequency_analysis 
+
+import sys
+
+import itertools
+
 list_of_words = ["awesomeness", "hearkened","aloneness","beheld","courtship","swoops",
 "memphis", "attentional","pintsized","rustics","hermeneutics","dismissive","delimiting","proposes",
 "between","postilion","repress","racecourse","matures","directions","pressed","miserabilia",
@@ -17,6 +23,11 @@ letter_to_numbers = {" ": 0, "a": 1,"b": 2, "c": 3, "d": 4, "e": 5, "f": 6, "g":
 numbers_to_letters = {0 : " ", 1: "a", 2: "b", 3: "c", 4: "d", 5: "e", 6: "f", 7: "g", 
 8: "h", 9: "i", 10: "j", 11: "k", 12: "l", 13: "m", 14: "n", 15: "o",16: "p", 17: "q", 18: "r",
 19: "s", 20: "t", 21: "u", 22: "v", 23: "w", 24: "x", 25: "y", 26: "z"}
+
+#letters = 'abcdefghijklmnopqrstuvwxyz'
+
+most_common_order= ''
+not_possible = ''
 def find_repeated_sequences(c):
 
 	
@@ -38,7 +49,7 @@ def find_repeated_sequences(c):
 							spacings[sequence] = []
 					spacings[sequence].append(i-s)
 
-	print(spacings)
+	print("spacings: " , spacings)
 	return spacings
 
 
@@ -59,7 +70,7 @@ def factorize(spacings):
 					factors.append(i)
 	if 1 in factors:
 		factors.remove(1)
-	print(factors)
+	print("factores: ", factors)
 	return factors
 
 
@@ -72,7 +83,6 @@ def count_factors(factors):
 			factor_counts[i] = 1
 		else:
 			factor_counts[i] += 1
-	print(factor_counts)
 	return factor_counts
 
 #return the common factors 
@@ -85,7 +95,7 @@ def most_common_factors(factor_counts):
 			continue
 		ordered_factors.append((k, factor_counts[k]))
 
-	ordered_factors.sort(key = lambda x: x[1])
+	ordered_factors.sort(key = lambda x: x[1], reverse = True)
 	return ordered_factors 
 
 
@@ -108,7 +118,7 @@ def select_words():
 	length = len(list_of_words)
 
 	#randomly select the length of the message
-	length_of_c = random.randint(100,500)
+	length_of_c = random.randint(400,700)
 
 	#empty variable to append to 
 	message = ""
@@ -136,9 +146,7 @@ def create_key():
 		key.append(1 + (i%t))
 
 	return key
-
-def create_cipher_from_message(key,message):
-
+def expand_key(key, message):
 	#turn message into list
 	message = list(message)
 	
@@ -159,8 +167,12 @@ def create_cipher_from_message(key,message):
 	dif = len(key) - len(message)
 	for i in range(dif):
 		key.pop(-1)
+	return key
+def create_cipher_from_message(key,message):
 
-
+	# #turn message into list
+	message = list(message)
+	key = expand_key(key,message)
 	#encrypt message 
 	c = ""
 	for i in range(len(message)):
@@ -178,25 +190,124 @@ def create_cipher_from_message(key,message):
 
 	return c
 
+def create_message_from_cipher(key,ciphertext):
+	ciphertext = list(ciphertext)
+
+	key = expand_key(key,ciphertext)
+	#encrypt message 
+	c = ""
+	for i in range(len(ciphertext)):
+		c1 = ciphertext[i]
+		k = key[i]
+
+		c_num = letter_to_numbers[c1]
+
+		c_num = c_num - k
+
+		if c_num < 0:
+			c_num += 27
+
+		c += numbers_to_letters[c_num]
+
+	return c
+
+#get the nth letters in the cipher text
+def get_nth(n, kl, ciphertext):
+
+	list_of_letters = []
+
+	while (n -1) < len(ciphertext):
+		list_of_letters.append(ciphertext[n-1])
+		n += kl
+	return list_of_letters
+
+def decrypt_attempt(ciphertext,likely_key_length,most_common_order):
+
+	scores = []
+	for n in range(1, likely_key_length[0]+1):
+		letters = get_nth(n,likely_key_length[0],ciphertext)
+
+		s = []
+
+		for k in range(1,25):
+			attempted_d = create_message_from_cipher([k],letters)
+
+			key_and_score = (k,frequency_analysis.plausability(attempted_d,most_common_order))
+			s.append(key_and_score)
+		s.sort(key = lambda x: x[1], reverse = True)
+
+		#we will only attempt to decrypt with the most correct keys
+		scores.append(s[:6])
+
+	for c in itertools.product(range(6), repeat=likely_key_length[0]):
+
+	 	pos_key = []
+
+	 	for i in range(likely_key_length[0]):
+	 		pos_key.append(scores[i][c[i]][0])
+
+	 	possible_message = create_message_from_cipher(pos_key,ciphertext)
+	 	possible_message = possible_message.split(" ")
+	 	if possible_message[0] in list_of_words:
+	 		return possible_message
+	return 0
+	 	
+
+def crack_cipher(ciphertext,most_common_order):
+	all_likely_key_length = kasiski(ciphertext)
+	print(all_likely_key_length)
+	if all_likely_key_length == []:
+		print("Sorry, we could not find the key length")
+
+		sys.exit(1)
+	for key_length in all_likely_key_length:
+		decrypt = decrypt_attempt(ciphertext,key_length,most_common_order)
+		if decrypt != 0:
+			return decrypt
+	# for i in range(likely_key_length):
+	# 	key = []
+
+	# 	for j in range(4):
+	# 		key.append(scores[i][(j+4)])
+
+
+
+
+
+frequencies,not_possible = frequency_analysis.count_letters_in_letterbase(list_of_words,not_possible)
+
+#print(frequencies)
+most_common_order = frequency_analysis.make_most_common(frequencies)
 
 
 message = select_words()
-
+print(message)
 
 key = create_key()
-
 print(len(key))
 
+ordered_message = frequency_analysis.order_frequencies(message,most_common_order)
+
+score = frequency_analysis.plausability(message,most_common_order)
+
+#print(score)
+
+#print(len(key))
 
 c = create_cipher_from_message(key,message)
 
-print(message)
 
-print()
+#decrypt_attempt(c,likely_key_length[0],most_common_order)
 
-print(c)
+m = crack_cipher(c,most_common_order)
+m2 = ""
+for i in m:
+	m2 += i + " "
 
-print(kasiski(c))
+m2 = m2[:-1]
+
+print(m2)
+
 
 
 
