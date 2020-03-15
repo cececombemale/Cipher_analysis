@@ -6,6 +6,8 @@ import sys
 
 import itertools
 
+import friedman_key_length
+
 list_of_words = ["awesomeness", "hearkened","aloneness","beheld","courtship","swoops",
 "memphis", "attentional","pintsized","rustics","hermeneutics","dismissive","delimiting","proposes",
 "between","postilion","repress","racecourse","matures","directions","pressed","miserabilia",
@@ -13,6 +15,8 @@ list_of_words = ["awesomeness", "hearkened","aloneness","beheld","courtship","sw
 "wobbly","protruded","combusting","unconvertible","successors","footfalls","bursary","myrtle","photocompose"]
 
 letters = 'abcdefghijklmnopqrstuvwxyz'
+
+letters2 = ' abcdefghijklmnopqrstuvwxyz'
 
 max_key_length = 24
 
@@ -118,7 +122,7 @@ def select_words():
 	length = len(list_of_words)
 
 	#randomly select the length of the message
-	length_of_c = random.randint(400,700)
+	length_of_c = random.randint(45,50)
 
 	#empty variable to append to 
 	message = ""
@@ -140,10 +144,13 @@ def create_key():
 	#select a random key length
 	t = random.randint(1,24)
 
+	for i in range(1, t+1):
+		key.append(random.randint(0,26))
+
 	#create the key by using the scheduling algorithm he gave us,
 	#need to figure out how to make this more complex for better testing 
-	for i in range(1, t+1):
-		key.append(1 + (i%t))
+	# for i in range(1, t+1):
+	# 	key.append(1 + (i%t))
 
 	return key
 def expand_key(key, message):
@@ -184,7 +191,11 @@ def create_cipher_from_message(key,message):
 		m_num = m_num + k
 
 		if m_num > 26:
-			m_num = (m_num % 26) - 1
+			#print('before conversion', m_num)
+			m_num = (m_num % 26)
+			#print('after mod', m_num)
+			#m_num -= 1
+			#print("message as index", m_num)
 
 		c += numbers_to_letters[m_num]
 
@@ -205,7 +216,7 @@ def create_message_from_cipher(key,ciphertext):
 		c_num = c_num - k
 
 		if c_num < 0:
-			c_num += 27
+			c_num += 26
 
 		c += numbers_to_letters[c_num]
 
@@ -229,7 +240,7 @@ def decrypt_attempt(ciphertext,likely_key_length,most_common_order):
 
 		s = []
 
-		for k in range(1,25):
+		for k in range(0,27):
 			attempted_d = create_message_from_cipher([k],letters)
 
 			key_and_score = (k,frequency_analysis.plausability(attempted_d,most_common_order))
@@ -248,18 +259,32 @@ def decrypt_attempt(ciphertext,likely_key_length,most_common_order):
 
 	 	possible_message = create_message_from_cipher(pos_key,ciphertext)
 	 	possible_message = possible_message.split(" ")
-	 	if possible_message[0] in list_of_words:
-	 		return possible_message
+	 	if len(possible_message) <3:
+	 		return 0
+	 	else:
+	 		if possible_message[0] and possible_message[1] and possible_message[2] in list_of_words:
+	 			return possible_message
 	return 0
 	 	
 
-def crack_cipher(ciphertext,most_common_order):
+def crack_cipher(ciphertext,most_common_order, letters):
 	all_likely_key_length = kasiski(ciphertext)
-	print(all_likely_key_length)
+
 	if all_likely_key_length == []:
+
+		print('Kaiski could not determine a key length, trying Friedman ')
+
+		key_length = friedman_key_length.friedman_length_guess(ciphertext,letters)
+		print("Friedman thinks the key length is: ", key_length)
+
 		print("Sorry, we could not find the key length")
 
 		sys.exit(1)
+
+	l = []
+	for i in all_likely_key_length:
+		l.append(i[0])
+	print("Kaiski thinks that the key length could be the following ", l)
 	for key_length in all_likely_key_length:
 		decrypt = decrypt_attempt(ciphertext,key_length,most_common_order)
 		if decrypt != 0:
@@ -286,20 +311,19 @@ print(message)
 key = create_key()
 print(len(key))
 
-ordered_message = frequency_analysis.order_frequencies(message,most_common_order)
+#ordered_message = frequency_analysis.order_frequencies(message,most_common_order)
 
-score = frequency_analysis.plausability(message,most_common_order)
+#score = frequency_analysis.plausability(message,most_common_order)
 
-#print(score)
-
-#print(len(key))
 
 c = create_cipher_from_message(key,message)
+
+print(c)
 
 
 #decrypt_attempt(c,likely_key_length[0],most_common_order)
 
-m = crack_cipher(c,most_common_order)
+m = crack_cipher(c,most_common_order,letters2)
 m2 = ""
 for i in m:
 	m2 += i + " "
