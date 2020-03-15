@@ -6,7 +6,7 @@ import sys
 
 import itertools
 
-import friedman_key_length
+
 
 list_of_words = ["awesomeness", "hearkened","aloneness","beheld","courtship","swoops",
 "memphis", "attentional","pintsized","rustics","hermeneutics","dismissive","delimiting","proposes",
@@ -53,7 +53,6 @@ def find_repeated_sequences(c):
 							spacings[sequence] = []
 					spacings[sequence].append(i-s)
 
-	print("spacings: " , spacings)
 	return spacings
 
 
@@ -74,7 +73,6 @@ def factorize(spacings):
 					factors.append(i)
 	if 1 in factors:
 		factors.remove(1)
-	print("factores: ", factors)
 	return factors
 
 
@@ -117,42 +115,6 @@ def kasiski(c):
 	return common
 
 
-def select_words():
-	#select words from the list of words to create message to encrypt
-	length = len(list_of_words)
-
-	#randomly select the length of the message
-	length_of_c = random.randint(45,50)
-
-	#empty variable to append to 
-	message = ""
-
-	#for the length of the message, get random word from the list of words and 
-	#add to the message and a space
-	for i in range(length_of_c):
-		word = random.randint(0,length-1)
-		message += list_of_words[word] + " "
-
-	#remove the last character in the message which is a space
-	message = message[:-1]
-
-	return message
-
-def create_key():
-	key = []
-
-	#select a random key length
-	t = random.randint(1,24)
-
-	for i in range(1, t+1):
-		key.append(random.randint(0,26))
-
-	#create the key by using the scheduling algorithm he gave us,
-	#need to figure out how to make this more complex for better testing 
-	# for i in range(1, t+1):
-	# 	key.append(1 + (i%t))
-
-	return key
 def expand_key(key, message):
 	#turn message into list
 	message = list(message)
@@ -175,31 +137,6 @@ def expand_key(key, message):
 	for i in range(dif):
 		key.pop(-1)
 	return key
-def create_cipher_from_message(key,message):
-
-	# #turn message into list
-	message = list(message)
-	key = expand_key(key,message)
-	#encrypt message 
-	c = ""
-	for i in range(len(message)):
-		m = message[i]
-		k = key[i]
-
-		m_num = letter_to_numbers[m]
-
-		m_num = m_num + k
-
-		if m_num > 26:
-			#print('before conversion', m_num)
-			m_num = (m_num % 26)
-			#print('after mod', m_num)
-			#m_num -= 1
-			#print("message as index", m_num)
-
-		c += numbers_to_letters[m_num]
-
-	return c
 
 def create_message_from_cipher(key,ciphertext):
 	ciphertext = list(ciphertext)
@@ -215,9 +152,9 @@ def create_message_from_cipher(key,ciphertext):
 
 		c_num = c_num - k
 
-		if c_num < 0:
-			c_num += 26
-
+		#if c_num < 0:
+		c_num = (c_num%27)
+				
 		c += numbers_to_letters[c_num]
 
 	return c
@@ -267,15 +204,10 @@ def decrypt_attempt(ciphertext,likely_key_length,most_common_order):
 	return 0
 	 	
 
-def crack_cipher(ciphertext,most_common_order, letters):
+def crack_cipher(ciphertext,most_common_order, letters2):
 	all_likely_key_length = kasiski(ciphertext)
 
 	if all_likely_key_length == []:
-
-		print('Kaiski could not determine a key length, trying Friedman ')
-
-		key_length = friedman_key_length.friedman_length_guess(ciphertext,letters)
-		print("Friedman thinks the key length is: ", key_length)
 
 		print("Sorry, we could not find the key length")
 
@@ -285,6 +217,7 @@ def crack_cipher(ciphertext,most_common_order, letters):
 	for i in all_likely_key_length:
 		l.append(i[0])
 	print("Kaiski thinks that the key length could be the following ", l)
+	print()
 	for key_length in all_likely_key_length:
 		decrypt = decrypt_attempt(ciphertext,key_length,most_common_order)
 		if decrypt != 0:
@@ -297,31 +230,14 @@ def crack_cipher(ciphertext,most_common_order, letters):
 
 
 
+c = input("Please input the ciphertext: ")
 
+print()
 
 frequencies,not_possible = frequency_analysis.count_letters_in_letterbase(list_of_words,not_possible)
 
 #print(frequencies)
 most_common_order = frequency_analysis.make_most_common(frequencies)
-
-
-message = select_words()
-print(message)
-
-key = create_key()
-print(len(key))
-
-#ordered_message = frequency_analysis.order_frequencies(message,most_common_order)
-
-#score = frequency_analysis.plausability(message,most_common_order)
-
-
-c = create_cipher_from_message(key,message)
-
-print(c)
-
-
-#decrypt_attempt(c,likely_key_length[0],most_common_order)
 
 m = crack_cipher(c,most_common_order,letters2)
 m2 = ""
