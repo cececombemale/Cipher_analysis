@@ -95,6 +95,8 @@ def order_frequencies(message,most_common_order):
 
 	freq_letter = dict()
 
+	#create an inverted dictionary, frequencies are keys and value
+	#is list of letters w that frequency
 	for key in letter_freq.keys():
 		if letter_freq[key] not in freq_letter:
 			freq_letter[letter_freq[key]] = [key]
@@ -102,7 +104,7 @@ def order_frequencies(message,most_common_order):
 		else:
 			freq_letter[letter_freq[key]].append(key)
 
-
+	#make a list that we can sort by frequency
 	ordered_frequencies = []
 
 	for key in freq_letter.keys():
@@ -113,6 +115,7 @@ def order_frequencies(message,most_common_order):
 	for i in range(len(ordered_frequencies)):
 		ordered_frequencies[i][1].sort(key=most_common_order.find, reverse = True)
 
+	#put the message in most common order form 
 	ordered_message = ''
 
 	for i in ordered_frequencies:
