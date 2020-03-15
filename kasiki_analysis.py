@@ -170,23 +170,26 @@ def get_nth(n, kl, ciphertext):
 	return list_of_letters
 
 def decrypt_attempt(ciphertext,likely_key_length,most_common_order):
-
+	#keep track of all the scores 
 	scores = []
 	for n in range(1, likely_key_length[0]+1):
+		#get the nth letters
 		letters = get_nth(n,likely_key_length[0],ciphertext)
 
 		s = []
-
+		#try every (0,26) possible keys
 		for k in range(0,27):
 			attempted_d = create_message_from_cipher([k],letters)
 
+			#get the score of the decryption
 			key_and_score = (k,frequency_analysis.plausability(attempted_d,most_common_order))
 			s.append(key_and_score)
+		#sort them from best to worst
 		s.sort(key = lambda x: x[1], reverse = True)
 
 		#we will only attempt to decrypt with the most correct keys
 		scores.append(s[:6])
-
+	#loop through all permuations of the keys 
 	for c in itertools.product(range(6), repeat=likely_key_length[0]):
 
 	 	pos_key = []
